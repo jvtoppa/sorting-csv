@@ -1,108 +1,58 @@
 import pandas as pd
 import numpy as np
 import os
-
-
-    
-    
+ 
 tabela_total = pd.DataFrame()
 lista_arquivos = os.listdir("teste_planilhas_chip")
-
-lst_all = []
 lst_ano = []
-lst_mes = []
-lst = []
-
-
-fl = 1
-#lista de todos as datas
-for x in range(len(lista_arquivos)):
-    lst_all.append(lista_arquivos[x][:8])
+valores_csv = []
 
 #lista de todos os anos
-for y in range(len(lst_all)):
-    lst_ano.append(int(lst_all[y][:4]))
+for all_values in range(len(lista_arquivos)):
+    lst_ano.append(int(lista_arquivos[all_values][:4]))
     lst_ano = list(set(lst_ano))
 
-#lista de todos os meses
-for z in range(1, 13):
-    lst_mes.append(int(z))
 while True:
-    mes_periodo = input('Data/Periodo (d/p)')
-    if mes_periodo == 'd':
-        m = input('Insira um mês: \n')
-        
-        if m != '':
-            fl = 0
-            if int(m) not in lst_mes:
-                print('erro\n')
-            else:
-                if m != '':
-                    lst_mes = [int(m)]
-            
-                
-        a = input('Insira um ano: \n')
-        if a != '':
-            if int(a) not in lst_ano:
-                print('erro\n')
-            else:
-                if a != '':
-                    if int(a) in lst_ano:
-                        lst_ano = [int(a)]
-                        
-                        if m != '':
-                            fl = 2
-                        break
-
-                elif a == '' and m == '':
-                    print('erro\n')
-                
-                else:
-                    
-                    break
-        else:
+    data_ou_periodo = input('Data/Periodo (d/p)')
+    if data_ou_periodo == 'd':
+        try:
+            mes = input('Insira um mês: \n')
+            ano = input('Insira um ano: \n')
+            if ano == '':
+                ano = lst_ano[0]
+            periodo_total = pd.date_range(start = f'01/{mes}/{ano}', end = f'31/12/{lst_ano[-1]}')
+            periodo_total = periodo_total.strftime("%Y%m%d")
+            print(periodo_total)
             break
+
+        except ValueError:
+            print('\n(!) Erro: data inválida\n')
+
     
-    if mes_periodo == 'p':
+    elif data_ou_periodo == 'p':
+        try:
+            periodo_primeiro = input('Insira a primeira data do período (formato mes/dia/ano)')
+            periodo_segundo = input('Insira a segunda data do período (formato mes/dia/ano)')
+            periodo_total = pd.date_range(start = periodo_primeiro, end = periodo_segundo)
+            periodo_total = periodo_total.strftime("%Y%m%d")
 
-        periodo_primeiro = input('Insira a primeira data do período (formato ano-mes-dia)')
-        periodo_segundo = input('Insira a segunda data do período (formato ano-mes-dia)')
-        date1 = periodo_primeiro.split('-')
-        date2 = periodo_segundo.split('-')
-        date_end = []
-
-        for i in date1:
-            date_end.append(i)
-
-        for i in date2:
-            date_end.append(i)
-
-        dia_inicial = date_end[2]
-        dia_final = date_end[5]
-
-        lst_dia_inicial = [x for x in range(int(dia_inicial), 32)]
-        lst_dia_final = [x for x in range(1, int(dia_final) + 1)]
-        lst_dia = [x for x in range(1, 32)]
-
+            print(periodo_total)
+            break
+        except ValueError:
+            print('\n(!) Erro: período inválido\n')
+    else:
+        print('(!) Comando inválido')
+        
 for arquivo in lista_arquivos:
-    if int(arquivo[:4]) in lst_ano and int(arquivo[4:6]) in lst_mes:
+    if arquivo[:8] in periodo_total:
         tabela = pd.DataFrame(pd.read_csv(f"teste_planilhas_chip\{arquivo}"))
-        lst.append(tabela)
-
-tabela_total = pd.concat(lst[i] for i in range(len(lst)))
+        valores_csv.append(tabela)
 
 
-if fl == 0:
-    if os.path.isdir('mes-' + str(m)) == False:
-        os.mkdir('mes-' + str(m))
-    tabela_total.to_csv('mes-' + str(m) +'\mes-' + str(lst_mes[0]) + '.csv')
+tabela_total = pd.concat(valores_csv[i] for i in range(len(valores_csv)))
 
-elif fl == 2:
-    if os.path.isdir('ano-' + str(a) + '-mes-' + str(m)) == False:
-        os.mkdir('ano-' + str(a) + '-mes-' + str(m))
-    tabela_total.to_csv('ano-' + str(a) + '-mes-' + str(m) + '\\ano-'+ str(lst_ano[0]) + '-mes-' + str(lst_mes[0]) + '.csv')
+if not os.path.isdir(f'{periodo_total[0]}-{periodo_total[-1]}'):
+    os.mkdir(f'{periodo_total[0]}-{periodo_total[-1]}')
+tabela_total.to_csv(f'{periodo_total[0]}-{periodo_total[-1]}\\{periodo_total[0]}-{periodo_total[-1]}.csv')
 
-else:
-    if os.path.isdir('ano-' + str(a)) == False:
-        os.mkdir('ano-' + str(a))
-    tabela_total.to_csv('ano-' + str(a) + '\\ano-'+ str(lst_ano[0]) + '.csv')
+print(f'\nCriado o arquivo {periodo_total[0]}-{periodo_total[-1]}.csv')
