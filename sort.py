@@ -4,13 +4,15 @@ import os
  
 tabela_total = pd.DataFrame()
 lista_arquivos = os.listdir("teste_planilhas_chip")
-lst_ano = []
+lista_ano = []
 valores_csv = []
 
-#lista de todos os anos
+
 for all_values in range(len(lista_arquivos)):
-    lst_ano.append(int(lista_arquivos[all_values][:4]))
-    lst_ano = list(set(lst_ano))
+    lista_ano.append(int(lista_arquivos[all_values][:4]))
+    lista_ano = list(set(lista_ano))
+
+#SEPARADOR POR PERIODO/DATA
 
 while True:
     data_ou_periodo = input('Data/Periodo (d/p)')
@@ -19,10 +21,10 @@ while True:
             mes = input('Insira um mês: \n')
             ano = input('Insira um ano: \n')
             if ano == '':
-                ano = lst_ano[0]
-            periodo_total = pd.date_range(start = f'01/{mes}/{ano}', end = f'31/12/{lst_ano[-1]}')
+                ano = lista_ano[0]
+            periodo_total = pd.date_range(start = f'01/{mes}/{ano}', end = f'31/12/{lista_ano[-1]}')
             periodo_total = periodo_total.strftime("%Y%m%d")
-            print(periodo_total)
+
             break
 
         except ValueError:
@@ -36,23 +38,46 @@ while True:
             periodo_total = pd.date_range(start = periodo_primeiro, end = periodo_segundo)
             periodo_total = periodo_total.strftime("%Y%m%d")
 
-            print(periodo_total)
             break
         except ValueError:
             print('\n(!) Erro: período inválido\n')
     else:
         print('(!) Comando inválido')
+
+#AGREGADOR DE .CSV
         
 for arquivo in lista_arquivos:
     if arquivo[:8] in periodo_total:
-        tabela = pd.DataFrame(pd.read_csv(f"teste_planilhas_chip\{arquivo}"))
+            
+        tabela = pd.DataFrame(pd.read_csv(f"teste_planilhas_chip\{arquivo}", header = 1))
         valores_csv.append(tabela)
 
 
 tabela_total = pd.concat(valores_csv[i] for i in range(len(valores_csv)))
 
+#CRIAÇÃO DE NOVAS COLUNAS
+
+data_leitura_lst = []
+horario_leitura_lst = []
+
+seletor_linha = tabela_total.loc[:, "# Reading Time (UTC)"]
+
+for tempo in seletor_linha:
+    data_leitura_lst.append(f'{tempo[:4]}-{tempo[4:6]}-{tempo[6:8]}')
+    horario_leitura_lst.append(f'{tempo[9:11]}:{tempo[11:13]}:{tempo[13:]}'.strip('Z'))
+
+tabela_total.insert(0, 'Date', data_leitura_lst)
+tabela_total.insert(1, 'Hour', horario_leitura_lst)
+tabela_total.drop('# Reading Time (UTC)', axis= 1, inplace=True)
+
+
+#OUTPUT
+
 if not os.path.isdir(f'{periodo_total[0]}-{periodo_total[-1]}'):
     os.mkdir(f'{periodo_total[0]}-{periodo_total[-1]}')
-tabela_total.to_csv(f'{periodo_total[0]}-{periodo_total[-1]}\\{periodo_total[0]}-{periodo_total[-1]}.csv')
+
+tabela_total.to_csv(f'{periodo_total[0]}-{periodo_total[-1]}\\{periodo_total[0]}-{periodo_total[-1]}.csv', index=False)
+
+
 
 print(f'\nCriado o arquivo {periodo_total[0]}-{periodo_total[-1]}.csv')
